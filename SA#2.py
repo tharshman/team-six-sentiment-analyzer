@@ -16,6 +16,10 @@ def read_sentiment_files(file_path):
 
 positive_words = read_sentiment_files('/Users/thomasharshman/LoughranMcDonald_Positive.csv')    # Load positive words
 negative_words = read_sentiment_files('/Users/thomasharshman/LoughranMcDonald_Negative.csv')    # Load negative words
+modal_weak = read_sentiment_files('/Users/thomasharshman/LoughranMcDonald_ModalWeak.csv')       # Load weak modal words
+modal_strong = read_sentiment_files('/Users/thomasharshman/LoughranMcDonald_ModalStrong.csv')   # Load strong modal words
+litigious = read_sentiment_files('/Users/thomasharshman/LoughranMcDonald_Litigious.csv')        # Load litigious words
+uncertainty = read_sentiment_files('/Users/thomasharshman/LoughranMcDonald_Uncertainty.csv')    # Load uncertainty words
 
 def analyze_sentiment(text):
     """Analyze the sentiment of the given text using bag-of-words approach.
@@ -35,15 +39,23 @@ def analyze_sentiment(text):
 
     positive_count = sum(word in positive_words for word in words)  # Count positive words
     negative_count = sum(word in negative_words for word in words)  # Count negative words
+    weak_count = sum(word in modal_weak for word in words)          # Count weak modal words
+    strong_count = sum(word in modal_strong for word in words)      # Count strong modal words
+#    litigious_count = sum(word in litigious for word in words)     # Count litigious words
+#    uncertainty_count = sum(word in uncertainty for word in words) # Count uncertainty words
 
-    if positive_count > negative_count:                             # Determine overall sentiment
-        sentiment = "Positive"
-    elif negative_count > positive_count:                           # Determine overall sentiment
-        sentiment = "Negative"
+    if positive_count > negative_count:                             # Compare positive and negative word counts
+        if strong_count > weak_count:                               # Compare strong and weak word counts
+            sentiment = "Strong Positive"
+
+    elif negative_count > positive_count:                           # Compare negative and positive word counts
+        if weak_count > strong_count:                               # Compare weak and strong word counts
+            sentiment = "Strong Negative"
+
     else:
-        sentiment = "Neutral"
-    
-    return sentiment, positive_count, negative_count                # Return sentiment and word counts
+        sentiment = "Neutral"                                       # Neutral sentiment
+        
+    return sentiment, positive_count, negative_count, strong_count, weak_count  # Return sentiment and word counts
     
 def extract_text_from_pdf(pdf_path):
     """Extract text from PDF file using PDFMiner.
@@ -61,7 +73,12 @@ def extract_text_from_pdf(pdf_path):
 pdf_file_path = "/Users/thomasharshman/PycharmProjects/pythonProject/data/Apple keeps iPhone shipments steady despite 2023 turmoil.pdf"
 text = extract_text_from_pdf(pdf_file_path)                         # Extract text from PDF file
 
-sentiment, positive_count, negative_count = analyze_sentiment(text) # Analyze sentiment
+sentiment, positive_count, negative_count, strong_count, weak_count = analyze_sentiment(text) # Analyze sentiment
 print(f"The sentiment is: {sentiment}")                             # Print sentiment
 print(f"Positive word count: {positive_count}")                     # Print positive word count
-print(f"Negative word count: {negative_count}")                     # Print negative word count   
+print(f"Negative word count: {negative_count}")                     # Print negative word count
+print(f'Positive to negative ratio: {positive_count/negative_count}') # Print positive to negative ratio
+print(f"Strong word count: {strong_count}")                         # Print strong word count
+print(f"Weak word count: {weak_count}")                             # Print weak word count
+print(f'Strong to weak ratio: {strong_count/weak_count}')           # Print strong to weak ratio
+
