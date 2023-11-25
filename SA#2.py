@@ -41,8 +41,8 @@ def analyze_sentiment(text):
     negative_count = sum(word in negative_words for word in words)  # Count negative words
     weak_count = sum(word in modal_weak for word in words)          # Count weak modal words
     strong_count = sum(word in modal_strong for word in words)      # Count strong modal words
-#    litigious_count = sum(word in litigious for word in words)     # Count litigious words
-#    uncertainty_count = sum(word in uncertainty for word in words) # Count uncertainty words
+    litigious_count = sum(word in litigious for word in words)      # Count litigious words
+    uncertainty_count = sum(word in uncertainty for word in words)  # Count uncertainty words
 
     if positive_count > negative_count:                             # Compare positive and negative word counts
         if strong_count > weak_count:                               # Compare strong and weak word counts
@@ -53,10 +53,17 @@ def analyze_sentiment(text):
             sentiment = "Strong Negative"
 
     else:
-        sentiment = "Neutral"                                       # Neutral sentiment
+        sentiment = "Neutral"
         
-    return sentiment, positive_count, negative_count, strong_count, weak_count  # Return sentiment and word counts
-    
+    if litigious_count >= 1:
+        sentiment = "Check the legal background on this"
+        
+    if uncertainty_count >= 1:
+        sentiment = "Seems to be some uncertantiy in this stock"                                       # Neutral sentiment
+        
+    return sentiment, positive_count, negative_count, strong_count, \
+        weak_count, litigious_count, uncertainty_count
+
 def extract_text_from_pdf(pdf_path):
     """Extract text from PDF file using PDFMiner.
     
@@ -70,10 +77,10 @@ def extract_text_from_pdf(pdf_path):
     text =  extract_text(pdf_path)                                  # Extract text from PDF file
     return text                                                     # Return extracted text
 
-pdf_file_path = "/Users/thomasharshman/PycharmProjects/pythonProject/data/Apple keeps iPhone shipments steady despite 2023 turmoil.pdf"
+pdf_file_path = "/Users/thomasharshman/PycharmProjects/pythonProject/data/Apple 's market value ends above $3.0 trillion for first time.pdf"
 text = extract_text_from_pdf(pdf_file_path)                         # Extract text from PDF file
 
-sentiment, positive_count, negative_count, strong_count, weak_count = analyze_sentiment(text) # Analyze sentiment
+sentiment, positive_count, negative_count, strong_count, weak_count, litigious_count, uncertainty_count = analyze_sentiment(text) # Analyze sentiment
 print(f"The sentiment is: {sentiment}")                             # Print sentiment
 print(f"Positive word count: {positive_count}")                     # Print positive word count
 print(f"Negative word count: {negative_count}")                     # Print negative word count
@@ -81,4 +88,5 @@ print(f'Positive to negative ratio: {positive_count/negative_count}') # Print po
 print(f"Strong word count: {strong_count}")                         # Print strong word count
 print(f"Weak word count: {weak_count}")                             # Print weak word count
 print(f'Strong to weak ratio: {strong_count/weak_count}')           # Print strong to weak ratio
-
+print(f"Litigious word count: {litigious_count}")                   # Print litigious word count
+print(f"Uncertainty word count: {uncertainty_count}")               # Print uncertainty word count
