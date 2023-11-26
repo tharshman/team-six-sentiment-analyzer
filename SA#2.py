@@ -2,6 +2,7 @@
 
 # Imports
 import os
+import shutil
 import zipfile
 from pdfminer.high_level import extract_text
 
@@ -19,7 +20,7 @@ def read_sentiment_files(file_path: str) -> set[str]:
         return set(word.strip().lower() for word in file)   # Return a set of words
 
 
-def analyze_sentiment(document_text: str) -> tuple[str, int, int, int, int, int, int, int, float]:
+def analyze_sentiment(document_text: str) -> tuple[str, int, int, int, float]:
     """Analyze the sentiment of the given text using bag-of-words approach.
     
     Args:
@@ -31,39 +32,25 @@ def analyze_sentiment(document_text: str) -> tuple[str, int, int, int, int, int,
             int: Number of positive words.
             int: Number of negative words.
     """
-    
+
     words = document_text.lower().split()                           # Tokenize the text
-    word_cnt: int = len(words)                                         # Count the number of words
+    word_cnt: int = len(words)                                      # Count the number of words
 
     positive_cnt = sum(word in positive_words for word in words)  # Count positive words
     negative_cnt = sum(word in negative_words for word in words)  # Count negative words
-    weak_cnt = sum(word in modal_weak for word in words)          # Count weak modal words
-    strong_cnt = sum(word in modal_strong for word in words)      # Count strong modal words
-    litigious_cnt = sum(word in litigious for word in words)      # Count litigious words
-    uncertainty_cnt = sum(word in uncertainty for word in words)  # Count uncertainty words
 
-    document_sentiment = "Neutral"                                           # Default sentiment
     if positive_cnt > negative_cnt:                             # Compare positive and negative word counts
-        if strong_cnt > weak_cnt:                               # Compare strong and weak word counts
-            document_sentiment = "Strong Positive"
+        document_sentiment = "Positive"
 
     elif negative_cnt > positive_cnt:                           # Compare negative and positive word counts
-        if weak_cnt > strong_cnt:                               # Compare weak and strong word counts
-            document_sentiment = "Strong Negative"
+        document_sentiment = "Negative"
 
     else:
         document_sentiment = "Neutral"
         
-    if litigious_cnt >= 1:
-        document_sentiment = "Check the legal background on this"
-        
-    if uncertainty_cnt >= 1:
-        document_sentiment = "Seems to be some uncertainty in this stock"   # Neutral sentiment
-
     sentiment_score = (positive_cnt - negative_cnt) / word_cnt
-        
-    return document_sentiment, positive_cnt, negative_cnt, strong_cnt, \
-        weak_cnt, litigious_cnt, uncertainty_cnt, word_cnt, sentiment_score
+
+    return document_sentiment, positive_cnt, negative_cnt, word_cnt, sentiment_score
 
 
 def extract_text_from_pdf(pdf_path: str) -> str:
@@ -99,11 +86,7 @@ def process_zip(zip_file_path: str, scores: dict) -> None:
             if pdf_file.endswith(".pdf"):
                 pdf_file_path = os.path.join(tmp_path, pdf_file)
                 text = extract_text_from_pdf(pdf_file_path)
-                sentiment, positive_count, negative_count, strong_count, weak_count, \
-                    litigious_count, uncertainty_count, word_count, sentiment_score = analyze_sentiment(text)
-
-                if weak_count == 0:
-                    weak_count = 1
+                sentiment, positive_count, negative_count, word_count, sentiment_score = analyze_sentiment(text)
 
                 print(f"File: {pdf_file}")  # Print file name
                 print(f"The sentiment is: {sentiment}")  # Print sentiment
@@ -111,18 +94,16 @@ def process_zip(zip_file_path: str, scores: dict) -> None:
                 print(f"Word count: {word_count}")
                 print(f"Positive word count: {positive_count}")  # Print positive word count
                 print(f"Negative word count: {negative_count}")
-                print(f'Positive to negative ratio: {positive_count / negative_count}')
-                print(f"Strong word count: {strong_count}")
-                print(f"Weak word count: {weak_count}")
-                print(f'Strong to weak ratio: {strong_count / weak_count}')
-                print(f"Litigious word count: {litigious_count}")
-                print(f"Uncertainty word count: {uncertainty_count}")
+                if negative_count != 0:
+                    print(f'Positive to negative ratio: {positive_count / negative_count}')
+                else:
+                    print("Cannot determine Positive to Negative ratio with no negative words")
                 print("=" * 50)  # Print a separator
 
                 scores[zip_file_name] = (positive_count, negative_count, sentiment_score)
 
     if tmp_path is not None:
-        os.remove(tmp_path, dir_fd=None)
+        shutil.rmtree(tmp_path, dir_fd=None)
 
 
 if __name__ == '__main__':
@@ -140,20 +121,8 @@ if __name__ == '__main__':
     word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_Negative.csv')
     negative_words = read_sentiment_files(word_file)  # Load negative words
 
-    word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_ModalWeak.csv')
-    modal_weak = read_sentiment_files(word_file)  # Load weak modal words
-
-    word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_ModalStrong.csv')
-    modal_strong = read_sentiment_files(word_file)  # Load strong modal words
-
-    word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_Litigious.csv')
-    litigious = read_sentiment_files(word_file)  # Load litigious words
-
-    word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_Uncertainty.csv')
-    uncertainty = read_sentiment_files(word_file)  # Load uncertainty words
-
     score_dict = {}
 
     # Extract text from PDF file
-    apple_zip = os.path.join(data_path, 'AAPL.zip')
-    process_zip(apple_zip, score_dict)
+    microsoft_zip = os.path.join(data_path, 'MSFT.zip')
+    process_zip(microsoft_zip, score_dict)
