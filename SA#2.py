@@ -19,7 +19,7 @@ def read_sentiment_files(file_path: str) -> set[str]:
         return set(word.strip().lower() for word in file)   # Return a set of words
 
 
-def analyze_sentiment(document_text: str) -> tuple[str, int, int, int, int, int, int]:
+def analyze_sentiment(document_text: str) -> tuple[str, int, int, int, int, int, int, int, float]:
     """Analyze the sentiment of the given text using bag-of-words approach.
     
     Args:
@@ -33,6 +33,7 @@ def analyze_sentiment(document_text: str) -> tuple[str, int, int, int, int, int,
     """
     
     words = document_text.lower().split()                           # Tokenize the text
+    word_cnt: int = len(words)                                         # Count the number of words
 
     positive_cnt = sum(word in positive_words for word in words)  # Count positive words
     negative_cnt = sum(word in negative_words for word in words)  # Count negative words
@@ -58,9 +59,11 @@ def analyze_sentiment(document_text: str) -> tuple[str, int, int, int, int, int,
         
     if uncertainty_cnt >= 1:
         document_sentiment = "Seems to be some uncertainty in this stock"   # Neutral sentiment
+
+    sentiment_score = (positive_cnt - negative_cnt) / word_cnt
         
     return document_sentiment, positive_cnt, negative_cnt, strong_cnt, \
-        weak_cnt, litigious_cnt, uncertainty_cnt
+        weak_cnt, litigious_cnt, uncertainty_cnt, word_cnt, sentiment_score
 
 
 def extract_text_from_pdf(pdf_path: str) -> str:
@@ -77,30 +80,35 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     return document_text                                                    # Return extracted text
 
 
-def process_zip(zip_file_path: str) -> None:
+def process_zip(zip_file_path: str, scores: dict) -> None:
     """Process a zip file and return a list of files in it.
 
     Args:
         zip_file_path (str): Path to a zip file.
+        scores (dict): Dictionary to store the scores.
 
     Returns:
         None
     """
+    zip_file_name = os.path.basename(zip_file_path).replace(os.path.extsep + 'zip', '')
+
     with zipfile.ZipFile(zip_file_path, 'r') as zip_file:                    # Open the zip file
-        tmp_path = os.path.join(os.path.dirname(zip_file_path), 'temp')                         # Temporary path
-        zip_file.extractall(tmp_path)                                               # Extract all files
+        tmp_path = os.path.join(os.path.dirname(zip_file_path), 'temp', zip_file_name)            # Temporary path
+        zip_file.extractall(tmp_path)                                              # Extract all files
         for pdf_file in os.listdir(tmp_path):
             if pdf_file.endswith(".pdf"):
-                pdf_file_path = os.path.join("temp", pdf_file)
+                pdf_file_path = os.path.join(tmp_path, pdf_file)
                 text = extract_text_from_pdf(pdf_file_path)
                 sentiment, positive_count, negative_count, strong_count, weak_count, \
-                    litigious_count, uncertainty_count = analyze_sentiment(text)
+                    litigious_count, uncertainty_count, word_count, sentiment_score = analyze_sentiment(text)
 
                 if weak_count == 0:
                     weak_count = 1
 
                 print(f"File: {pdf_file}")  # Print file name
                 print(f"The sentiment is: {sentiment}")  # Print sentiment
+                print(f"Sentiment score: {sentiment_score}")
+                print(f"Word count: {word_count}")
                 print(f"Positive word count: {positive_count}")  # Print positive word count
                 print(f"Negative word count: {negative_count}")
                 print(f'Positive to negative ratio: {positive_count / negative_count}')
@@ -111,9 +119,10 @@ def process_zip(zip_file_path: str) -> None:
                 print(f"Uncertainty word count: {uncertainty_count}")
                 print("=" * 50)  # Print a separator
 
-    for pdf_file in os.listdir(tmp_path):
-        print(f"Removing temporary file: {pdf_file}")
-        os.remove(pdf_file)
+                scores[zip_file_name] = (positive_count, negative_count, sentiment_score)
+
+    if tmp_path is not None:
+        os.remove(tmp_path, dir_fd=None)
 
 
 if __name__ == '__main__':
@@ -143,7 +152,8 @@ if __name__ == '__main__':
     word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_Uncertainty.csv')
     uncertainty = read_sentiment_files(word_file)  # Load uncertainty words
 
+    score_dict = {}
+
     # Extract text from PDF file
     apple_zip = os.path.join(data_path, 'AAPL.zip')
-    process_zip(apple_zip)
-
+    process_zip(apple_zip, score_dict)
