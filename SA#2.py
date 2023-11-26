@@ -1,3 +1,8 @@
+"""Sentiment Analysis using Bag-of-Words approach."""
+
+# Imports
+import os
+import zipfile
 from pdfminer.high_level import extract_text
 
 
@@ -72,30 +77,73 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     return document_text                                                    # Return extracted text
 
 
+def process_zip(zip_file_path: str) -> None:
+    """Process a zip file and return a list of files in it.
+
+    Args:
+        zip_file_path (str): Path to a zip file.
+
+    Returns:
+        None
+    """
+    with zipfile.ZipFile(zip_file_path, 'r') as zip_file:                    # Open the zip file
+        tmp_path = os.path.join(os.path.dirname(zip_file_path), 'temp')                         # Temporary path
+        zip_file.extractall(tmp_path)                                               # Extract all files
+        for pdf_file in os.listdir(tmp_path):
+            if pdf_file.endswith(".pdf"):
+                pdf_file_path = os.path.join("temp", pdf_file)
+                text = extract_text_from_pdf(pdf_file_path)
+                sentiment, positive_count, negative_count, strong_count, weak_count, \
+                    litigious_count, uncertainty_count = analyze_sentiment(text)
+
+                if weak_count == 0:
+                    weak_count = 1
+
+                print(f"File: {pdf_file}")  # Print file name
+                print(f"The sentiment is: {sentiment}")  # Print sentiment
+                print(f"Positive word count: {positive_count}")  # Print positive word count
+                print(f"Negative word count: {negative_count}")
+                print(f'Positive to negative ratio: {positive_count / negative_count}')
+                print(f"Strong word count: {strong_count}")
+                print(f"Weak word count: {weak_count}")
+                print(f'Strong to weak ratio: {strong_count / weak_count}')
+                print(f"Litigious word count: {litigious_count}")
+                print(f"Uncertainty word count: {uncertainty_count}")
+                print("=" * 50)  # Print a separator
+
+    for pdf_file in os.listdir(tmp_path):
+        print(f"Removing temporary file: {pdf_file}")
+        os.remove(pdf_file)
+
+
 if __name__ == '__main__':
+    current_file = __file__
+    current_dir = os.path.dirname(current_file)
+    data_path = os.path.join(current_dir, 'data')
+    lmcd_file_path = os.path.join(current_dir, 'data', 'loughran_mcdonald')
+    lmcd_file_path = os.path.abspath(lmcd_file_path)  # Optional: Converts to absolute path
+    print(lmcd_file_path)
+
     # Load sentiment words
-    positive_words = read_sentiment_files('/Users/thomasharshman/LoughranMcDonald_Positive.csv')  # Load positive words
-    negative_words = read_sentiment_files('/Users/thomasharshman/LoughranMcDonald_Negative.csv')  # Load negative words
-    modal_weak = read_sentiment_files('/Users/thomasharshman/LoughranMcDonald_ModalWeak.csv')  # Load weak modal words
-    modal_strong = read_sentiment_files(
-        '/Users/thomasharshman/LoughranMcDonald_ModalStrong.csv')  # Load strong modal words
-    litigious = read_sentiment_files('/Users/thomasharshman/LoughranMcDonald_Litigious.csv')  # Load litigious words
-    uncertainty = read_sentiment_files(
-        '/Users/thomasharshman/LoughranMcDonald_Uncertainty.csv')  # Load uncertainty words
+    word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_Positive.csv')
+    positive_words = read_sentiment_files(word_file)  # Load positive words
+
+    word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_Negative.csv')
+    negative_words = read_sentiment_files(word_file)  # Load negative words
+
+    word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_ModalWeak.csv')
+    modal_weak = read_sentiment_files(word_file)  # Load weak modal words
+
+    word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_ModalStrong.csv')
+    modal_strong = read_sentiment_files(word_file)  # Load strong modal words
+
+    word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_Litigious.csv')
+    litigious = read_sentiment_files(word_file)  # Load litigious words
+
+    word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_Uncertainty.csv')
+    uncertainty = read_sentiment_files(word_file)  # Load uncertainty words
 
     # Extract text from PDF file
-    pdf_file_path = "/Users/thomasharshman/PycharmProjects/pythonProject/data/Apple 's market value ends above $3.0 trillion for first time.pdf"
-    text = extract_text_from_pdf(pdf_file_path)  # Extract text from PDF file
+    apple_zip = os.path.join(data_path, 'AAPL.zip')
+    process_zip(apple_zip)
 
-    sentiment, positive_count, negative_count, strong_count, weak_count, \
-        litigious_count, uncertainty_count = analyze_sentiment(text)  # Analyze sentiment
-
-    print(f"The sentiment is: {sentiment}")  # Print sentiment
-    print(f"Positive word count: {positive_count}")  # Print positive word count
-    print(f"Negative word count: {negative_count}")  # Print negative word count
-    print(f'Positive to negative ratio: {positive_count / negative_count}')  # Print positive to negative ratio
-    print(f"Strong word count: {strong_count}")  # Print strong word count
-    print(f"Weak word count: {weak_count}")  # Print weak word count
-    print(f'Strong to weak ratio: {strong_count / weak_count}')  # Print strong to weak ratio
-    print(f"Litigious word count: {litigious_count}")  # Print litigious word count
-    print(f"Uncertainty word count: {uncertainty_count}")  # Print uncertainty word count
