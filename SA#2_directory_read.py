@@ -36,7 +36,7 @@ def analyze_sentiment(document_text: str) -> tuple[str, int, int, int, float]:
             int: Number of positive words.
             int: Number of negative words.
     """
-    
+
     words = document_text.lower().split()  # Tokenize the text
     word_cnt: int = len(words)  # Count the number of words
 
@@ -87,22 +87,6 @@ def process_zip(zip_file_path: str, scores: dict) -> None:
     with zipfile.ZipFile(zip_file_path, 'r') as zip_file:  # Open the zip file
         zip_file.extractall(extracted_path)  # Extract all files
 
-        for zip_file in zip_files:
-            if zip_file.endswith('.zip'):
-                zip_file_path = os.path.join(data_path, zip_file)
-                process_zip(zip_file_path, score_dict)
-
-        print("Sentiment scores:")
-        for zip_file_name, scores in score_dict.items():
-            positive_count, negative_count, sentiment_score = scores
-            print(f"File: {zip_file_name}")
-            print(f"Sentiment score: {sentiment_score}")
-            print(f"Positive word count: {positive_count}")
-            print(f"Negative word count: {negative_count}")
-            print("-" * 50)
-
-            scores[zip_file_name] = (positive_count, negative_count, sentiment_score)
-
     shutil.rmtree(extracted_path)
 
 
@@ -126,3 +110,18 @@ if __name__ == '__main__':
     # Extract text from PDF file
     data_path = os.path.join(current_dir, 'data')
     zip_files = os.listdir(data_path)
+    for zip_file in zip_files:
+        if zip_file.lower().endswith('.zip'):
+            zip_file_path = os.path.join(data_path, zip_file)
+            process_zip(zip_file_path, score_dict)
+
+    print("Sentiment scores:")
+    for zip_file_name, scores in score_dict.items():
+        positive_count, negative_count, sentiment_score = scores
+        print(f"File: {zip_file_name}")
+        print(f"Sentiment score: {sentiment_score}")
+        print(f"Positive word count: {positive_count}")
+        print(f"Negative word count: {negative_count}")
+        print("-" * 50)
+
+        scores[zip_file_name] = (positive_count, negative_count, sentiment_score)
