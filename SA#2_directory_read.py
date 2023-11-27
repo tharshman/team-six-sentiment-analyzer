@@ -84,8 +84,21 @@ def process_zip(zip_file_path: str, scores: dict) -> None:
     zip_file_name = os.path.basename(zip_file_path).replace(os.path.extsep + 'zip', '')
     extracted_path = os.path.join(temp_dir, zip_file_name)
 
+    score_list = []
     with zipfile.ZipFile(zip_file_path, 'r') as zip_file:  # Open the zip file
         zip_file.extractall(extracted_path)  # Extract all files
+
+
+        for pdf_file in os.listdir(extracted_path):
+            if pdf_file.endswith(".pdf"):
+                pdf_file_path = os.path.join(extracted_path, pdf_file)
+                text = extract_text_from_pdf(pdf_file_path)
+                sentiment, positive_count, negative_count, word_count, sentiment_score = analyze_sentiment(text)
+
+                score_list.append(sentiment_score)
+
+    # Calculate average sentiment score
+    scores[zip_file_name] = sum(score_list) / len(score_list)
 
     shutil.rmtree(extracted_path)
 
@@ -117,12 +130,14 @@ if __name__ == '__main__':
             process_zip(zip_file_path, score_dict)
 
     print("Sentiment scores:")
-    for zip_file_name, scores in score_dict.items():
-        positive_count, negative_count, sentiment_score = scores
-        print(f"File: {zip_file_name}")
-        print(f"Sentiment score: {sentiment_score}")
-        print(f"Positive word count: {positive_count}")
-        print(f"Negative word count: {negative_count}")
-        print("-" * 50)
+    #for zip_file_name, score in score_dict.items():
+    #    print(f"File: {zip_file_name}")
+    #    print(f"Sentiment score: {score}")
+    #    print(f"Positive word count: {positive_count}")
+    #    print(f"Negative word count: {negative_count}")
+    #
+    #    print("-" * 50)
 
-        scores[zip_file_name] = (positive_count, negative_count, sentiment_score)
+    df = pd.DataFrame.from_dict(score_dict, orient='index', columns=['Sentiment Score'])
+    df = df.sort_values(by='Sentiment Score', ascending=False)
+    print(df.head(5))
