@@ -101,14 +101,15 @@ if __name__ == '__main__':
     # Load sentiment words
     word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_Positive.csv')
     positive_words = read_sentiment_files(word_file)  # Load positive words
+    print(positive_words)
 
     word_file = os.path.join(lmcd_file_path, 'LoughranMcDonald_Negative.csv')
     negative_words = read_sentiment_files(word_file)  # Load negative words
+    print(negative_words)
 
     score_dict = {}
 
     # Extract text from PDF file
-    data_path = os.path.join(current_dir, 'data')
     zip_files = os.listdir(data_path)
     for zip_file in zip_files:
         if zip_file.lower().endswith('.zip'):
