@@ -8,8 +8,6 @@ import tempfile
 import pandas as pd
 from pdfminer.high_level import extract_text
 
-temp_dir = tempfile.mkdtemp()
-
 
 def read_sentiment_files(file_path: str) -> set[str]:
     """Load sentiment words from a CSV file.
@@ -71,22 +69,22 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     return document_text  # Return extracted text
 
 
-def process_zip(zip_file_path: str, scores: dict) -> None:
+def process_zip(file_path: str, scores: dict) -> None:
     """Process a zip file and return a list of files in it.
 
     Args:
-        zip_file_path (str): Path to a zip file.
+        file_path (str): Path to a zip file.
         scores (dict): Dictionary to store the scores.
 
     Returns:
         None
     """
-    zip_file_name = os.path.basename(zip_file_path).replace(os.path.extsep + 'zip', '')
+    zip_file_name = os.path.basename(file_path).replace(os.path.extsep + 'zip', '')
     extracted_path = os.path.join(temp_dir, zip_file_name)
 
     score_list = []
-    with zipfile.ZipFile(zip_file_path, 'r') as zip_file:  # Open the zip file
-        zip_file.extractall(extracted_path)  # Extract all files
+    with zipfile.ZipFile(file_path, 'r') as zip_archive:  # Open the zip file
+        zip_archive.extractall(extracted_path)  # Extract all files
 
         for pdf_file in os.listdir(extracted_path):
             if pdf_file.endswith(".pdf"):
@@ -103,10 +101,11 @@ def process_zip(zip_file_path: str, scores: dict) -> None:
 
 
 if __name__ == '__main__':
+    temp_dir = tempfile.mkdtemp()
     current_file = __file__
     current_dir = os.path.dirname(current_file)
-    data_path = os.path.join(current_dir, 'data')
-    lmcd_file_path = os.path.join(current_dir, 'data', 'loughran_mcdonald')
+    data_path = os.path.join(current_dir, '..', 'data')
+    lmcd_file_path = os.path.join(data_path, 'loughran_mcdonald')
     lmcd_file_path = os.path.abspath(lmcd_file_path)  # Optional: Converts to absolute path
 
     # Load sentiment words
@@ -126,13 +125,6 @@ if __name__ == '__main__':
             process_zip(zip_file_path, score_dict)
 
     print("Sentiment scores:")
-    # for zip_file_name, score in score_dict.items():
-    #    print(f"File: {zip_file_name}")
-    #    print(f"Sentiment score: {score}")
-    #    print(f"Positive word count: {positive_count}")
-    #    print(f"Negative word count: {negative_count}")
-    #
-    #    print("-" * 50)
 
     df = pd.DataFrame.from_dict(score_dict, orient='index', columns=['Sentiment Score'])
     df = df.sort_values(by='Sentiment Score', ascending=False)
