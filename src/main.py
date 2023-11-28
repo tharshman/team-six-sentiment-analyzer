@@ -186,6 +186,7 @@ if __name__ == "__main__":
     df = pd.DataFrame.from_dict(score_dict, orient="index", columns=["Sentiment Score"])
     df = df.sort_values(by="Sentiment Score", ascending=False)
     df_top5 = df.head(5)
+    df_top5["Name"] = df_top5.index.map(dow_30)
     print(df_top5)
 
     # Save df_top5 to a CSV file
