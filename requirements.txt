@@ -1,2 +1,6 @@
 pdfminer.six
 pandas
+numpy
+matplotlib
+yfinance
+plotly
