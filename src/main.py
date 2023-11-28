@@ -37,10 +37,9 @@ def tokenize_text(document_text: str, exclude_stop_words: bool = True) -> list[s
     """
     corpus = document_text.lower()
     tokens = word_tokenize(corpus)  # Tokenize the text
-    if not exclude_stop_words:
-        return tokens
-
-    return [t for t in tokens if t not in stop_words]
+    if exclude_stop_words:
+        return [t for t in tokens if t not in stop_words]
+    return tokens
 
 
 def analyze_sentiment(document_text: str) -> float:
@@ -92,8 +91,8 @@ def process_zip(file_path: str, scores: dict) -> None:
         None
     """
     zip_file_name = os.path.basename(file_path).replace(os.path.extsep + "zip", "")
-    stock_symbol = os.path.splitext(zip_file_name)[0]
-    extracted_path = os.path.join(temp_dir, stock_symbol)
+    stock_ticker = os.path.splitext(zip_file_name)[0]
+    extracted_path = os.path.join(temp_dir, stock_ticker)
 
     score_list = []
     with zipfile.ZipFile(file_path, "r") as zip_archive:  # Open the zip file
@@ -108,7 +107,7 @@ def process_zip(file_path: str, scores: dict) -> None:
                 score_list.append(sentiment_score)
 
     # Calculate average sentiment score
-    scores[stock_symbol] = sum(score_list) / len(score_list)
+    scores[stock_ticker] = sum(score_list) / len(score_list)
 
 
 if __name__ == "__main__":
@@ -116,7 +115,7 @@ if __name__ == "__main__":
     print("Loading stopwords...")
     nltk.download("stopwords")
     stop_words = stopwords.words("english")
-    global_exclude_stop_words = False
+    global_exclude_stop_words = True
 
     # Create a temporary directory
     print("Setup directories...")
